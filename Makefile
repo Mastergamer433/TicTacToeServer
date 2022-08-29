@@ -2,16 +2,16 @@
 CXX := g++
 CXXFLAGS :=
 LINKFLAGS := 
-OBJS_DIR := obj
-OUT_DIR := build
-SOURCE_DIR := src
-EXEC := main
+OBJS_DIR? = obj/
+BUILD_DIR? = build/
+SOURCE_DIR := .
+EXEC := server
 SOURCE_FILES := $(wildcard $(SOURCE_DIR)/*.cpp)
 SOURCE_HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
-OBJS := $(subst $(SOURCE_DIR),$(OBJS_DIR), $(patsubst %.cpp,%.o,$(SOURCE_FILES)))
+OBJS := $(patsubst $(SOURCE_DIR)/%.cpp,$(OBJS_DIR)/%.o,$(SOURCE_FILES))
 
 $(EXEC): $(OBJS)
-	$(CXX) $(OBJS) $(CXXFLAGS) $(LINKFLAGS) -o $(OUT_DIR)/$(EXEC)
+	$(CXX) $(OBJS) $(CXXFLAGS) $(LINKFLAGS) -o $(BUILD_DIR)/$(EXEC)
 
 $(OBJS_DIR)/%.o : $(SOURCE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
