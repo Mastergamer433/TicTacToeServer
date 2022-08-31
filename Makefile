@@ -8,19 +8,19 @@ SOURCE_DIR := .
 EXEC := server
 SOURCE_FILES := $(wildcard $(SOURCE_DIR)/*.cpp)
 SOURCE_HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
-OBJS := $(patsubst $(SOURCE_DIR)/%.cpp,$(OBJS_DIR)/%.o,$(SOURCE_FILES))
+OBJS := $(patsubst $(SOURCE_DIR)/%.cpp,$(OBJS_DIR)/server/%.o,$(SOURCE_FILES))
 
 $(EXEC): $(OBJS)
 	$(CXX) $(OBJS) $(CXXFLAGS) $(LINKFLAGS) -o $(BUILD_DIR)/$(EXEC)
 
-$(OBJS_DIR)/%.o : $(SOURCE_DIR)/%.cpp
+$(OBJS_DIR)/server/%.o : $(SOURCE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #Files to be compiled
-$(OBJS_DIR)/main.o: $(SOURCE_FILES) $(SOURCE_HEADERS)
+$(OBJS_DIR)/server/main.o: $(SOURCE_FILES) $(SOURCE_HEADERS)
 
 run:
 	./build/main
 clean:
-	rm $(OBJS_DIR)/*.o 
-	rm $(OUT_DIR)/$(EXEC)
+	rm $(OBJS_DIR)/server/*.o 
+	rm $(BUILD_DIR)/$(EXEC)
