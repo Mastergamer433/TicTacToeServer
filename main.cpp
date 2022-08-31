@@ -13,7 +13,7 @@
 class GameData {
 public:
   bool done;
-  char board[9] = {'X', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'X'};
+  char board[9] = {'X', '#', '#', 'X', '#', '#', '#', '#', 'X'};
   std::string in;
   char turn;
 };
