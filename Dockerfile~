@@ -1,0 +1,11 @@
+FROM alpine:3.14
+
+RUN apk add --no-cache gcc
+RUN apk add --no-cache git
+RUN git clone https://github.com/Mastergamer433/TicTacToeServer /server
+
+WORKDIR /server
+
+RUN make
+
+CMD [ "build/server" ]

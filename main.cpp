@@ -13,7 +13,7 @@
 class GameData {
 public:
   bool done;
-  char board[9] = {'X', '#', '#', 'X', '#', '#', '#', '#', 'X'};
+  char board[9] = {'#', '#', '#', '#', '#', '#', '#', '#', '#'};
   std::string in;
   char turn;
 };
@@ -22,21 +22,22 @@ class ServerData {
 public:
   int server_fd, valread;
   int sockets[2];
+  int socketTurn;
 
   struct sockaddr_in address;
 
   int opt = 1;
   int addrlen = sizeof(address);
   char buffer[1024] = {0};
-  char *hello = "Hello from server";
+  char type[1024] = {0};
+  char c_msg[1024] = {0};
+  std::string strType;
 };
 
 ServerData sd;
 GameData gd;
 
-
 int server() {
-
   // Creating socket file descriptor
   if ((sd.server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
     perror("socket failed");
@@ -63,24 +64,50 @@ int server() {
     perror("listen");
     exit(EXIT_FAILURE);
   }
+  return 0;
 }
 
 int waitForConnection(){
-  if ((sd.sockets[0] = accept(sd.server_fd, (struct sockaddr *)&sd.address,
+  int socket;
+  if ((socket = accept(sd.server_fd, (struct sockaddr *)&sd.address,
                               (socklen_t *)&sd.addrlen)) < 0) {
     perror("accept");
     exit(EXIT_FAILURE);
   }
+  return socket;
+}
+
+int read(int socket){
+  int err = read(socket, sd.buffer, 1024);
+  printf("%s\n", sd.buffer);
+  return err;
+
 }
 
 int read(){
-  sd.valread = read(sd.sockets[0], sd.buffer, 1024);
+  int err = read(sd.sockets[sd.socketTurn], sd.buffer, 1024);
+  bool done = false;
+  int i = 0;
+  while(!done){
+    if(sd.buffer[i] == ' '){
+
+      for(int j = i; j < strlen(sd.buffer); j++){
+	sd.c_msg[j-i] = sd.buffer[j+1];
+      }
+      break;
+    }
+    sd.type[i] = sd.buffer[i];
+    sd.strType += sd.buffer[i];
+    i++;
+  }
+
   printf("%s\n", sd.buffer);
 }
 
 int send(char* message){
-  send(sd.sockets[0], message, strlen(message), 0);
+  int err = send(sd.sockets[sd.socketTurn], message, strlen(message), 0);
   printf("Hello message sent\n");
+  return err;
 }
 
 
@@ -91,6 +118,11 @@ int switchTurn() {
     gd.turn = 'O';
   } else {
     gd.turn = 'X';
+  }
+  if (sd.socketTurn == 0) {
+    sd.socketTurn = 1;
+  } else {
+    sd.socketTurn = 0;
   }
   return 0;
 }
@@ -184,13 +216,13 @@ int printBoard() {
 int main(int argc, char const *argv[]) {
   /// server
   server();
-
-  waitForConnection();
-  // waitForConnection();
+  sd.sockets[0] = waitForConnection();
+  sd.sockets[1] = waitForConnection();
 
   bool invalidMove = true;
   gd.done = false;
   gd.turn = 'X';
+  sd.socketTurn = 0;
   while (!gd.done) {
     printBoard();
     std::string tmp;
@@ -205,15 +237,16 @@ int main(int argc, char const *argv[]) {
     char *writable = new char[tmp.size() + 1];
     std::copy(tmp.begin(), tmp.end(), writable);
     writable[tmp.size()] = '\0'; // don't forget the terminating 0
-
     send(writable);
+    // if(){
+    //   gd.done = true;
+    //   break;
+    // }
 
     // don't forget to free the string after finished using it
     delete[] writable;
 
-    gd.done = true;
-
-    // move();
+    move();
     // int err = checkWin();
     // if (err == 0) {
     //   won();
@@ -224,7 +257,7 @@ int main(int argc, char const *argv[]) {
     //   tie();
     //   return 0;
     // }
-    // switchTurn();
+    switchTurn();
   }
   // closing the connected socket
   close(sd.sockets[0]);
