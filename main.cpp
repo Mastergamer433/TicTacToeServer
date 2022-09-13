@@ -31,7 +31,7 @@ public:
   char buffer[1024] = {0};
   char type[1024] = {0};
   char c_msg[1024] = {0};
-  std::string strType;
+  std::string strType, msg;
 };
 
 ServerData sd;
@@ -77,13 +77,6 @@ int waitForConnection(){
   return socket;
 }
 
-int read(int socket){
-  int err = read(socket, sd.buffer, 1024);
-  printf("%s\n", sd.buffer);
-  return err;
-
-}
-
 int read(){
   int err = read(sd.sockets[sd.socketTurn], sd.buffer, 1024);
   bool done = false;
@@ -100,13 +93,15 @@ int read(){
     sd.strType += sd.buffer[i];
     i++;
   }
-
-  printf("%s\n", sd.buffer);
 }
 
 int send(char* message){
   int err = send(sd.sockets[sd.socketTurn], message, strlen(message), 0);
-  printf("Hello message sent\n");
+  return err;
+}
+
+int send(const char* message){
+  int err = send(sd.sockets[sd.socketTurn], message, strlen(message), 0);
   return err;
 }
 
@@ -127,34 +122,31 @@ int switchTurn() {
   return 0;
 }
 int makeMove() {
-  if (gd.board[std::stoi(gd.in)] != ' ') {
+  if (gd.board[std::stoi(sd.c_msg)] != '#') {
     return 1;
   }
 
-  gd.board[std::stoi(gd.in)] = gd.turn;
+  gd.board[std::stoi(sd.c_msg)] = gd.turn;
   return 0;
 }
 
 int move() {
   bool invalidMove = true;
-  send("[MOVE]");
-  // while (invalidMove) {
-    // std::cout << "It's your turn " << gd.turn << ": ";
-    // std::cin >> gd.in;
-    // gd.in = (std::to_string(((std::stoi(gd.in)) - 1)));
-    // int err = makeMove();
-    // if (err != 0) {
-    //   std::cout << "Error while making move: " << err << "\n";
-    //   switch (err) {
-    //   case 1:
-    //     std::cout << "You made an invalid move... Try again.\n";
-    //   }
-    // } else {
-    //   invalidMove = false;
-    // }
-  // }
+  while (invalidMove) {
+    send("[DOMOVE] move");
+    read();
+    std::cin >> gd.in;
+    sd.msg = (std::to_string(((std::stoi(gd.in)) - 1)));
+    int err = makeMove();
+    if (err != 0) {
+      const char* data = &"[!MOVE] " [ err];
+      send(data);
+    } else {
+      invalidMove = false;
+    }
+  }
 
-  gd.in = (std::to_string(((std::stoi(gd.in)) - 1)));
+  send("[MOVE] done");
   return 0;
 }
 
@@ -229,14 +221,16 @@ int main(int argc, char const *argv[]) {
     for (int i = 0; i < sizeof(gd.board); i++) {
       tmp += gd.board[i];
     }
-    std::cout << tmp;
 
     tmp = "[BOARD] " + tmp;
-    
+
     std::string str;
     char *writable = new char[tmp.size() + 1];
     std::copy(tmp.begin(), tmp.end(), writable);
     writable[tmp.size()] = '\0'; // don't forget the terminating 0
+
+    std::cout << sd.strType;
+    std::cout << sd.msg;
     send(writable);
     // if(){
     //   gd.done = true;
@@ -245,7 +239,7 @@ int main(int argc, char const *argv[]) {
 
     // don't forget to free the string after finished using it
     delete[] writable;
-
+    
     move();
     // int err = checkWin();
     // if (err == 0) {
